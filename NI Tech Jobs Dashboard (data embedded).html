@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NI Tech Labour Market — Job Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!--
+  ════════════════════════════════════════════════════════════════════
+  HOW TO EDIT THIS FILE
+  ════════════════════════════════════════════════════════════════════
+  1. Open in Notepad (Windows) or TextEdit (Mac — Format > Make Plain
+     Text first), or any code/text editor.
+  2. Press Ctrl+F (Cmd+F on Mac) and search for the label shown below
+     to jump straight to what you want to change.
+  3. Change the value, save, then refresh the file in your browser.
+
+  WHAT YOU CAN EDIT                         SEARCH FOR
+  ─────────────────────────────────────────────────────
+  Report title, source, dates             EDIT MASTHEAD
+  5 headline stat numbers                 EDIT STATS
+  Fig 7  — annual postings timeseries     EDIT FIG1
+  Fig 8  — top occupations bars          EDIT FIG2
+  Fig 9  — top employers table           EDIT FIG3
+  Fig 10  — salary distribution columns   EDIT FIG4
+  Fig 11  — skills demand vs supply       EDIT FIG5
+  Fig 12  — experience requirements       EDIT FIG6
+  Fig 13  — software skills bars          EDIT FIG7
+  Fig 14  — industry table + FDI bars     EDIT FIG8
+  All red insight text boxes             EDIT INSIGHT
+  All teal compare-note text boxes       EDIT COMPARE
+  Footer text                            EDIT FOOTER
+  ════════════════════════════════════════════════════════════════════
+-->
+
+<style>
+  :root {
+    --ink:    #0f1923;
+    --paper:  #f5f0e8;
+    --accent: #c0392b;
+    --mid:    #2c3e50;
+    --pale:   #e8e2d6;
+    --gold:   #d4a017;
+    --teal:   #1a6b72;
+    --rule:   #ccc5b5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+  .masthead { border-bottom: 3px double var(--ink); padding: 32px 48px 24px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px; }
+  .masthead-label { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .masthead h1 { font-family: 'DM Serif Display', serif; font-size: clamp(28px, 4vw, 48px); line-height: 1.05; color: var(--ink); }
+  .masthead h1 em { font-style: italic; color: var(--accent); }
+  .masthead-meta { text-align: right; font-size: 11px; color: #666; line-height: 1.7; font-weight: 300; }
+  .masthead-meta strong { display: block; font-size: 13px; color: var(--ink); font-weight: 600; }
+  .stats-strip { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid var(--rule); }
+  .stat-cell { padding: 20px 24px; border-right: 1px solid var(--rule); }
+  .stat-cell:last-child { border-right: none; }
+  .stat-num { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+  .stat-num.accent { color: var(--accent); }
+  .stat-num.teal { color: var(--teal); }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; font-weight: 500; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .panel { padding: 32px 40px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .panel:nth-child(even) { border-right: none; }
+  .panel.full { grid-column: 1 / -1; border-right: none; }
+  .panel-label { font-size: 9px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .panel h2 { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 4px; }
+  .panel .subtitle { font-size: 12px; color: #777; margin-bottom: 20px; font-weight: 300; }
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 11px; width: 42px; text-align: right; color: #555; font-weight: 500; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 22px; background: var(--pale); position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--ink); transition: width 1.2s cubic-bezier(.16,1,.3,1); position: relative; }
+  .bar-fill.accent { background: var(--accent); }
+  .bar-fill.teal { background: var(--teal); }
+  .bar-fill.gold { background: var(--gold); }
+  .bar-val { font-size: 11px; width: 50px; color: var(--ink); font-weight: 600; flex-shrink: 0; }
+  .skill-bars { display: flex; flex-direction: column; gap: 8px; }
+  .skill-row { display: grid; grid-template-columns: 160px 1fr 50px; align-items: center; gap: 8px; }
+  .skill-name { font-size: 11px; color: var(--ink); font-weight: 500; }
+  .skill-track { height: 14px; background: var(--pale); overflow: hidden; }
+  .skill-bar { height: 100%; background: var(--teal); transition: width 1.4s cubic-bezier(.16,1,.3,1); }
+  .skill-bar.dim { background: var(--rule); }
+  .skill-pct { font-size: 10px; color: #666; text-align: right; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; color: var(--accent); padding: 0 8px 8px; text-align: left; border-bottom: 1px solid var(--ink); }
+  .data-table td { padding: 9px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table .num { font-weight: 600; color: var(--ink); font-family: 'DM Serif Display', serif; font-size: 14px; }
+  .data-table .rank { color: var(--accent); font-weight: 700; font-size: 10px; }
+  .badge { display: inline-block; font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; background: var(--pale); color: #555; }
+  .badge.fdi { background: #d4edda; color: #155724; }
+  .sal-bars { display: flex; align-items: flex-end; gap: 4px; height: 100px; margin: 16px 0 8px; }
+  .sal-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .sal-bar { width: 100%; background: var(--mid); transition: height 1.2s cubic-bezier(.16,1,.3,1); }
+  .sal-bar.hi { background: var(--accent); }
+  .sal-tick { font-size: 8px; color: #999; writing-mode: vertical-rl; transform: rotate(180deg); }
+  .trend-svg { width: 100%; overflow: visible; }
+  .insight { border-left: 3px solid var(--accent); padding: 12px 16px; background: rgba(192,57,43,0.05); margin-top: 20px; }
+  .insight p { font-size: 12px; line-height: 1.6; color: var(--mid); }
+  .insight strong { color: var(--accent); }
+  .compare-note { border-left: 3px solid var(--teal); padding: 10px 14px; background: rgba(26,107,114,0.05); margin-top: 12px; font-size: 11px; color: var(--mid); line-height: 1.6; }
+  .compare-note strong { color: var(--teal); }
+  .footer { border-top: 3px double var(--ink); padding: 16px 48px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #888; }
+  .rule { width: 40px; height: 2px; background: var(--accent); margin: 12px 0; }
+  @media (max-width: 860px) {
+    .stats-strip { grid-template-columns: repeat(3, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+    .panel, .panel:nth-child(even) { border-right: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     EDIT MASTHEAD — title, source line, metadata
+     ════════════════════════════════════════════ -->
+<div class="masthead">
+  <div>
+    <!-- EDIT MASTHEAD: small label above the title -->
+    <div class="masthead-label">Perspective Economics · Labour Market Analysis</div>
+    <!-- EDIT MASTHEAD: main title — keep <em> tags around the italic word -->
+    <h1>Northern Ireland <em>Tech Sector</em><br>Job Posting Analytics</h1>
+  </div>
+  <div class="masthead-meta">
+    <!-- EDIT MASTHEAD: top-right metadata block -->
+    <strong>Source: Lightcast Q2 2025</strong>
+    Period: Jan 2016 – Dec 2025<br>
+    Region: Northern Ireland<br>
+    Filtered: Meaningful Tech Roles
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     EDIT STATS — the 5 headline numbers
+     Each stat-num contains the value, stat-label contains the description
+     ════════════════════════════════════════════ -->
+<div class="stats-strip">
+  <div class="stat-cell">
+    <div class="stat-num accent">31,896</div>          <!-- EDIT STATS: unique postings count -->
+    <div class="stat-label">Unique Job Postings</div>   <!-- EDIT STATS: label -->
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">127,442</div>                 <!-- EDIT STATS: total postings incl. reposts -->
+    <div class="stat-label">Total Postings (incl. reposts)</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num teal">1,088</div>              <!-- EDIT STATS: unique companies hiring -->
+    <div class="stat-label">Unique Companies Hiring</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">£30,016</div>                 <!-- EDIT STATS: median advertised salary -->
+    <div class="stat-label">Median Advertised Salary</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">28 days</div>                 <!-- EDIT STATS: median posting duration -->
+    <div class="stat-label">Median Posting Duration</div>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- ════════════════════════════════
+       FIG 7 — Annual postings chart (data in JS below, search EDIT FIG1)
+       EDIT INSIGHT FIG1 — change text inside <p> below
+       ════════════════════════════════ -->
+  <div class="panel full">
+    <div class="panel-label">Figure 7 — Annual Job Posting Index</div>
+    <h2>Unique Tech Job Postings by Year</h2>
+    <!-- EDIT: subtitle line below -->
+    <p class="subtitle">Northern Ireland, Jan 2016 – Dec 2025 · Source: Lightcast / Perspective Economics</p>
+    <svg class="trend-svg" id="trendChart" viewBox="0 0 900 180"></svg>
+    <!-- EDIT INSIGHT FIG1: change the text inside <p> below -->
+    <div class="insight">
+      <p>Job postings peaked at <strong>4,565 in 2022</strong>, mirroring the post-Covid hiring surge. By 2025 (projected full year), postings had fallen to approximately <strong>2,213 — a 51% decline</strong> from the 2022 high. This mirrors the NI Cyber Security Snapshot's finding of a 48% reduction in cyber postings since 2023, and reflects a <strong>global tech hiring correction</strong> rather than NI-specific weakness.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       FIG 8 — Top occupations (data in JS below, search EDIT FIG2)
+       EDIT COMPARE FIG2 — change teal box text below
+       ════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label">Figure 8 — Occupation Demand</div>
+    <h2>Top Occupations by Unique Postings</h2>
+    <p class="subtitle">Jan 2016 – Dec 2025 · SOC Classification</p>
+    <div class="bar-chart" id="occChart"></div>
+    <!-- EDIT COMPARE FIG8: change text below -->
+    <div class="compare-note">
+      <strong>Cross-reference:</strong> "Cyber Security Professionals" ranks 11th with 560 unique postings — consistent with the Cyber Snapshot's ~2,778 FTE workforce estimate and confirms demand-side activity across the broader tech ecosystem.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       FIG 9 — Top employers table
+       EDIT FIG9: change each table row directly in the HTML below
+       Each row format: rank | company name | unique posts | median duration | badge
+       Badge classes: class="badge fdi"  = green (FDI firm)
+                      class="badge"      = grey  (indigenous)
+       ════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label">Figure 9 — Employer Landscape</div>
+    <h2>Top Hiring Companies</h2>
+    <p class="subtitle">By unique postings, Jan 2016 – Dec 2025</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Company</th>
+          <th>Unique Posts</th>
+          <th>Median Duration</th>
+          <th>Profile</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- EDIT FIG9: change company name, numbers, badge label in each row -->
+        <tr><td class="rank">1</td><td>Cpl Jobs (EPAM)</td><td class="num">5,079</td><td>34 days</td><td><span class="badge fdi">FDI</span></td></tr>
+        <tr><td class="rank">2</td><td>Concentrix</td><td class="num">2,250</td><td>24 days</td><td><span class="badge fdi">FDI</span></td></tr>
+        <tr><td class="rank">3</td><td>Allstate NI</td><td class="num">1,932</td><td>21 days</td><td><span class="badge fdi">FDI</span></td></tr>
+        <tr><td class="rank">4</td><td>Version1</td><td class="num">1,482</td><td>28 days</td><td><span class="badge">Indigenous</span></td></tr>
+        <tr><td class="rank">5</td><td>Kainos Software</td><td class="num">1,239</td><td>21 days</td><td><span class="badge">Indigenous</span></td></tr>
+        <tr><td class="rank">6</td><td>Proofpoint</td><td class="num">622</td><td>35 days</td><td><span class="badge fdi">FDI · Cyber</span></td></tr>
+        <tr><td class="rank">7</td><td>Rapid7</td><td class="num">619</td><td>28 days</td><td><span class="badge fdi">FDI · Cyber</span></td></tr>
+      </tbody>
+    </table>
+    <!-- EDIT COMPARE FIG9: change text below -->
+    <div class="compare-note">
+      <strong>Cross-reference:</strong> Proofpoint and Rapid7 appear in both this dataset and the Cyber Snapshot's named high-demand employers, providing independent validation across two data sources.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       FIG 10 — Salary distribution (data in JS below, search EDIT FIG4)
+       EDIT INSIGHT FIG10 — change text below
+       ════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label">Figure 10 — Wage Distribution</div>
+    <h2>Advertised Salary Breakdown</h2>
+    <!-- EDIT: subtitle — update observation count and median if data changes -->
+    <p class="subtitle">7,114 observations (22% of postings include salary) · Median: £30,016</p>
+    <div class="sal-bars" id="salChart"></div>
+    <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px;">
+      <span style="font-size:9px; color:#888; width:100%; text-align:center;">Salary bands (£k)</span>
+    </div>
+    <!-- EDIT INSIGHT FIG10 -->
+    <div class="insight">
+      <p>The median NI tech salary of <strong>£30,016</strong> sits significantly below the Cyber Snapshot's cyber-specific median of <strong>£53,300</strong> — a £23,284 premium for specialist cyber roles. <strong>18% of postings advertise £45,000+</strong>, pointing to a bifurcated market where senior/specialist tech commands significantly higher pay.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       FIG 11 — Skills demand vs supply (data in JS below, search EDIT FIG5)
+       EDIT COMPARE FIG11 — change text below
+       ════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label">Figure 11 — Skills Composition</div>
+    <h2>Top Specialised Skills: Demand vs Supply</h2>
+    <p class="subtitle">% of postings requiring skill vs % of worker profiles listing it</p>
+    <div style="display:flex; gap:16px; margin-bottom:12px; font-size:10px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:12px;height:12px;background:var(--teal);display:inline-block;"></span> In postings</span>
+      <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:12px;height:12px;background:var(--rule);display:inline-block;"></span> In profiles</span>
+    </div>
+    <div class="skill-bars" id="skillChart"></div>
+    <!-- EDIT COMPARE FIG11 -->
+    <div class="compare-note">
+      <strong>Compositional mismatch:</strong> The data does not point to blanket skills undersupply. Cloud (AWS: +2.2pp) and Automation (+1.9pp) face genuine shortfalls, while Software Engineering (-6.6pp) and Project Management (-6.1pp) are oversupplied in profiles relative to postings — suggesting curriculum misalignment rather than a simple quantity problem.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       FIG 12 — Experience requirements (data in JS below, search EDIT FIG6)
+       EDIT INSIGHT FIG6 — change text below
+       ════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label">Figure 12 — Entry-Level Access</div>
+    <h2>Experience Requirements</h2>
+    <p class="subtitle">Minimum years required per posting · Relevant to graduate absorption</p>
+    <div class="bar-chart" id="expChart"></div>
+    <!-- EDIT INSIGHT FIG12 -->
+    <div class="insight">
+      <p>Over <strong>57% of postings list no experience requirement</strong>, suggesting considerable entry-level opportunity — however this is partially explained by undisclosed requirements. Postings explicitly requiring <strong>0–1 years account for just 9.4%</strong>, echoing the Cyber Snapshot's finding that entry-level postings fell from 13% (2021) to 7% (2024) within cyber specifically.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       FIG 13 — Software skills (data in JS below, search EDIT FIG7)
+       No insight box on this panel — add one if needed
+       ════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label">Figure 13 — Software Skills in Demand</div>
+    <h2>Top Software &amp; Technical Skills</h2>
+    <p class="subtitle">By share of total postings · Jan 2016 – Dec 2025</p>
+    <div class="skill-bars" id="softwareChart"></div>
+  </div>
+
+  <!-- ════════════════════════════════
+       FIG 14 — Industry table + FDI bar chart
+       EDIT FIG8: change the three industry table rows directly in HTML below
+       FDI bar chart data is in JS below, search EDIT FIG14
+       ════════════════════════════════ -->
+  <div class="panel">
+    <div class="panel-label">Figure 14 — Industry Composition</div>
+    <h2>Postings by Industry</h2>
+    <p class="subtitle">Filtered to tech-aligned sectors</p>
+    <table class="data-table">
+      <thead>
+        <tr><th>Industry (SIC)</th><th>Total Posts</th><th>Unique Posts</th></tr>
+      </thead>
+      <tbody>
+        <!-- EDIT FIG14: change industry name, total posts, unique posts in each row -->
+        <tr>
+          <td>Computer programming, consultancy &amp; related</td>
+          <td class="num">120,584</td>   <!-- EDIT FIG8: total posts -->
+          <td>28,199</td>                 <!-- EDIT FIG8: unique posts -->
+        </tr>
+        <tr>
+          <td>Information service activities</td>
+          <td class="num">3,635</td>
+          <td>1,986</td>
+        </tr>
+        <tr>
+          <td>Manufacture of computer, electronic &amp; optical products</td>
+          <td class="num">3,223</td>
+          <td>1,711</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="rule"></div>
+    <!-- EDIT FIG14: change the prose paragraph below if the % or interpretation changes -->
+    <p style="font-size:12px; line-height:1.6; color:var(--mid);">Computer programming &amp; consultancy accounts for <strong>88% of all unique postings</strong>, confirming Belfast's orientation as a software and services hub rather than a hardware/manufacturing centre — consistent with the Productivity Dashboard's R&amp;D and FDI profile.</p>
+    <div class="rule" style="background:var(--teal)"></div>
+    <!-- EDIT FIG14: change section label below if needed -->
+    <p style="font-size:11px; font-weight:600; color:var(--teal); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">NI FDI: Information &amp; Communication Flows (£m)</p>
+    <div class="bar-chart" id="fdiChart"></div>
+    <!-- EDIT FIG14: change source note below -->
+    <p style="font-size:10px; color:#888; margin-top:8px;">Source: ONS Subnational FDI Statistics, 2023. Note: Some earlier years suppressed for disclosure.</p>
+  </div>
+
+</div>
+
+<!-- EDIT FOOTER: change the two text strings below -->
+<div class="footer">
+  <span>Data: Lightcast Q2 2025 · ONS Subnational FDI 2023 · NI Cyber Security Snapshot 2025 · NI Productivity Dashboard 2025</span>
+  <span>NI Tech Sector Labour Market Analysis · March 2026</span>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// CHART DATA
+// Search each "EDIT FIG" label below to find the right section.
+// Every editable array or value has a comment beside it.
+// ════════════════════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────────────────
+// EDIT FIG1 — Annual job postings timeseries
+// yearData: each entry is {y: 'YEAR', v: COUNT}
+// Add or remove entries to change the number of years shown.
+// The chart automatically scales to the highest value.
+// ────────────────────────────────────────────────────────────────────
+const yearData = [
+  {y:'2016', v:2911}, // EDIT FIG1
+  {y:'2017', v:2915}, // EDIT FIG1
+  {y:'2018', v:3293}, // EDIT FIG1
+  {y:'2019', v:3305}, // EDIT FIG1
+  {y:'2020', v:2374}, // EDIT FIG1 — highlighted teal (lowest)
+  {y:'2021', v:3994}, // EDIT FIG1
+  {y:'2022', v:4565}, // EDIT FIG1 — highlighted red (highest)
+  {y:'2023', v:3823}, // EDIT FIG1
+  {y:'2024', v:2503}, // EDIT FIG1
+  {y:'2025', v:2213}, // EDIT FIG1 — always labelled as projected year
+];
+// EDIT FIG1: change '2025' below if your final year label is different
+const finalYear = '2025';
+// EDIT FIG1: bars below this value are highlighted teal (low points)
+const lowThreshold = 2400;
+
+const maxV = Math.max(...yearData.map(d=>d.v));
+const svg = document.getElementById('trendChart');
+const W=900, H=180, PAD={t:20,r:20,b:40,l:60};
+const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
+const bW = cW/yearData.length - 6;
+let svgContent = '';
+for(let i=0;i<=4;i++){
+  const y = PAD.t + cH*(1-i/4);
+  const val = Math.round(maxV*i/4);
+  svgContent += `<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="#e0dbd0" stroke-width="1"/>`;
+  svgContent += `<text x="${PAD.l-8}" y="${y+4}" text-anchor="end" font-family="DM Sans" font-size="10" fill="#999">${val.toLocaleString()}</text>`;
+}
+yearData.forEach((d,i)=>{
+  const x = PAD.l + i*(cW/yearData.length) + 3;
+  const h = (d.v/maxV)*cH;
+  const y = PAD.t + cH - h;
+  const isHigh = d.v === maxV;
+  const isDrop = d.v < lowThreshold;
+  const fill = isHigh ? '#c0392b' : (isDrop ? '#1a6b72' : '#0f1923');
+  svgContent += `<rect class="bar-anim" x="${x}" y="${H-PAD.b}" width="${bW}" height="0" fill="${fill}" data-y="${y}" data-h="${h}" rx="1"/>`;
+  svgContent += `<text x="${x+bW/2}" y="${H-PAD.b+14}" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#666">${d.y}</text>`;
+  if(isHigh || isDrop || d.y===finalYear){
+    svgContent += `<text x="${x+bW/2}" y="${y-6}" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="${fill}">${d.v.toLocaleString()}</text>`;
+  }
+});
+svg.innerHTML = svgContent;
+setTimeout(()=>{
+  document.querySelectorAll('.bar-anim').forEach(rect=>{
+    const targetY = parseFloat(rect.getAttribute('data-y'));
+    const targetH = parseFloat(rect.getAttribute('data-h'));
+    rect.style.transition = 'all 1.2s cubic-bezier(.16,1,.3,1)';
+    rect.setAttribute('y', targetY);
+    rect.setAttribute('height', targetH);
+  });
+},100);
+
+// ────────────────────────────────────────────────────────────────────
+// EDIT FIG2 — Top occupations horizontal bars
+// Each entry: label (name), v (unique postings count), type (bar colour)
+// type options: ''=dark ink  'accent'=red  'teal'=teal  'gold'=gold
+// The chart automatically scales all bars relative to the highest value.
+// ────────────────────────────────────────────────────────────────────
+const occData = [
+  {label:'Programmers & Software Dev',          v:5479, type:'accent'}, // EDIT FIG2
+  {label:'Sales Related Occupations',            v:2084, type:''},       // EDIT FIG2
+  {label:'IT Business Analysts & Architects',   v:1053, type:'teal'},   // EDIT FIG2
+  {label:'Customer Service Occupations',         v:931,  type:''},       // EDIT FIG2
+  {label:'IT Network Professionals',             v:645,  type:'teal'},   // EDIT FIG2
+  {label:'Cyber Security Professionals',         v:560,  type:'accent'}, // EDIT FIG2
+  {label:'IT Quality & Testing',                 v:537,  type:'teal'},   // EDIT FIG2
+  {label:'Management Consultants & BAs',         v:530,  type:''},       // EDIT FIG2
+];
+const occMax = Math.max(...occData.map(d=>d.v)); // auto-scales — no need to edit
+const occEl = document.getElementById('occChart');
+occData.forEach(d=>{
+  const pct = (d.v/occMax*100).toFixed(1);
+  occEl.innerHTML += `
+    <div class="bar-row">
+      <span class="bar-label" style="width:200px;text-align:left;font-size:10px;">${d.label}</span>
+      <div class="bar-track">
+        <div class="bar-fill ${d.type}" style="width:0%" data-target="${pct}%"></div>
+      </div>
+      <span class="bar-val">${d.v.toLocaleString()}</span>
+    </div>`;
+});
+
+// ────────────────────────────────────────────────────────────────────
+// EDIT FIG4 — Salary distribution column chart
+// Each entry: label (band name), v (number of observations)
+// The column marked isHigh:'£45k+' is highlighted red — change that
+// string if your top band label is different.
+// ────────────────────────────────────────────────────────────────────
+const salData = [
+  {label:'£10–15k', v:90},   // EDIT FIG4
+  {label:'£15–18k', v:424},  // EDIT FIG4
+  {label:'£18–21k', v:951},  // EDIT FIG4
+  {label:'£21–24k', v:579},  // EDIT FIG4
+  {label:'£24–27k', v:1063}, // EDIT FIG4
+  {label:'£27–30k', v:423},  // EDIT FIG4
+  {label:'£30–33k', v:788},  // EDIT FIG4
+  {label:'£33–36k', v:591},  // EDIT FIG4
+  {label:'£36–39k', v:285},  // EDIT FIG4
+  {label:'£39–42k', v:416},  // EDIT FIG4
+  {label:'£42–45k', v:246},  // EDIT FIG4
+  {label:'£45k+',   v:1258}, // EDIT FIG4 — this band is highlighted red
+];
+const highlightedSalBand = '£45k+'; // EDIT FIG4: change if top band label changes
+const salMax = Math.max(...salData.map(d=>d.v));
+const salEl = document.getElementById('salChart');
+salData.forEach(d=>{
+  const h = Math.round((d.v/salMax)*90);
+  const isHigh = d.label === highlightedSalBand;
+  salEl.innerHTML += `
+    <div class="sal-bar-wrap">
+      <div class="sal-bar ${isHigh?'hi':''}" style="height:0" data-h="${h}px"></div>
+      <span class="sal-tick">${d.label}</span>
+    </div>`;
+});
+
+// ────────────────────────────────────────────────────────────────────
+// EDIT FIG5 — Skills demand vs supply dual bars
+// Each entry: name, post (% of postings), prof (% of worker profiles)
+// A positive gap (post > prof) = demand exceeds supply (shortage)
+// A negative gap (prof > post) = supply exceeds demand (oversupply)
+// The bars scale to 20% max — change the /20 divisors below if your
+// values exceed 20%.
+// ────────────────────────────────────────────────────────────────────
+const skillData = [
+  {name:'Agile Methodology',      post:13.0, prof:10.9}, // EDIT FIG5
+  {name:'Project Management',     post:10.2, prof:16.3}, // EDIT FIG5
+  {name:'Software Development',   post: 8.1, prof:12.6}, // EDIT FIG5
+  {name:'Amazon Web Services',    post: 7.1, prof: 4.9}, // EDIT FIG5
+  {name:'Python',                 post: 6.8, prof: 6.7}, // EDIT FIG5
+  {name:'Automation',             post: 7.0, prof: 5.1}, // EDIT FIG5
+  {name:'Software Engineering',   post: 7.1, prof:13.7}, // EDIT FIG5
+  {name:'Computer Science',       post: 6.8, prof: 1.3}, // EDIT FIG5
+];
+// EDIT FIG5: change 20 below if any value exceeds 20% (set to your max rounded up)
+const skillScaleMax = 20;
+const skillEl = document.getElementById('skillChart');
+skillData.forEach(d=>{
+  skillEl.innerHTML += `
+    <div class="skill-row">
+      <span class="skill-name">${d.name}</span>
+      <div style="position:relative;height:24px;">
+        <div class="skill-track" style="position:absolute;top:0;left:0;right:0;height:24px;">
+          <div class="skill-bar" style="width:0%" data-target="${(d.post/skillScaleMax*100).toFixed(1)}%"></div>
+        </div>
+        <div style="position:absolute;top:5px;left:0;right:0;height:14px;background:none;">
+          <div class="skill-bar dim" style="width:0%;height:14px;margin-top:0;opacity:0.5" data-target="${(d.prof/skillScaleMax*100).toFixed(1)}%"></div>
+        </div>
+      </div>
+      <span class="skill-pct">${d.post}% / ${d.prof}%</span>
+    </div>`;
+});
+
+// ────────────────────────────────────────────────────────────────────
+// EDIT FIG6 — Experience requirements bars
+// Each entry: label, v (% of total postings), type (bar colour)
+// type options: ''=dark ink  'accent'=red  'teal'=teal
+// ────────────────────────────────────────────────────────────────────
+const expData = [
+  {label:'No requirement listed', v:57.4, type:''},       // EDIT FIG6
+  {label:'0–1 Years',             v: 9.4, type:'teal'},   // EDIT FIG6
+  {label:'2–3 Years',             v:18.2, type:''},       // EDIT FIG6
+  {label:'4–6 Years',             v:11.5, type:'accent'}, // EDIT FIG6
+  {label:'7–9 Years',             v: 1.4, type:''},       // EDIT FIG6
+  {label:'10+ Years',             v: 2.0, type:'accent'}, // EDIT FIG6
+];
+const expEl = document.getElementById('expChart');
+expData.forEach(d=>{
+  expEl.innerHTML += `
+    <div class="bar-row">
+      <span class="bar-label" style="width:180px;text-align:left;font-size:10px;">${d.label}</span>
+      <div class="bar-track">
+        <div class="bar-fill ${d.type}" style="width:0%" data-target="${d.v}%"></div>
+      </div>
+      <span class="bar-val">${d.v}%</span>
+    </div>`;
+});
+
+// ────────────────────────────────────────────────────────────────────
+// EDIT FIG7 — Software skills bars
+// Each entry: name, post (% of postings), prof (% of worker profiles)
+// Only postings % is shown as the bar; prof % is shown as text only.
+// Scale is set to 10% max — change skillScaleMax7 if values exceed 10%.
+// ────────────────────────────────────────────────────────────────────
+const swData = [
+  {name:'Java',               post:7.7, prof:10.7}, // EDIT FIG7
+  {name:'SQL',                post:7.2, prof:13.2}, // EDIT FIG7
+  {name:'AWS',                post:7.2, prof: 4.9}, // EDIT FIG7
+  {name:'Microsoft Excel',    post:7.1, prof: 9.5}, // EDIT FIG7
+  {name:'Python',             post:6.8, prof: 6.7}, // EDIT FIG7
+  {name:'JavaScript',         post:6.6, prof: 9.1}, // EDIT FIG7
+  {name:'Microsoft Azure',    post:5.7, prof: 3.7}, // EDIT FIG7
+  {name:'Linux',              post:5.2, prof: 5.7}, // EDIT FIG7
+];
+const skillScaleMax7 = 10; // EDIT FIG7: top of scale — set above your largest post value
+const swEl = document.getElementById('softwareChart');
+swData.forEach(d=>{
+  swEl.innerHTML += `
+    <div class="skill-row">
+      <span class="skill-name">${d.name}</span>
+      <div class="skill-track">
+        <div class="skill-bar" style="width:0%;background:var(--mid)" data-target="${(d.post/skillScaleMax7*100).toFixed(1)}%"></div>
+      </div>
+      <span class="skill-pct">${d.post}%</span>
+    </div>`;
+});
+
+// ────────────────────────────────────────────────────────────────────
+// EDIT FIG8 — NI FDI Information & Communication flows bar chart
+// Each entry: label (year), v (£m value)
+// The bar chart scales automatically to the highest value.
+// Years with suppressed ONS data can be omitted or set to a low value.
+// ────────────────────────────────────────────────────────────────────
+const fdiData = [
+  {label:'2018', v:52},  // EDIT FIG8
+  {label:'2019', v:15},  // EDIT FIG8
+  {label:'2020', v:6},   // EDIT FIG8
+  {label:'2021', v:88},  // EDIT FIG8
+  {label:'2022', v:5},   // EDIT FIG8
+  {label:'2023', v:126}, // EDIT FIG8
+];
+const fdiMax = Math.max(...fdiData.map(d=>d.v)); // auto-scales
+const fdiEl = document.getElementById('fdiChart');
+fdiData.forEach(d=>{
+  const pct = (d.v/fdiMax*100).toFixed(1);
+  fdiEl.innerHTML += `
+    <div class="bar-row">
+      <span class="bar-label">${d.label}</span>
+      <div class="bar-track">
+        <div class="bar-fill teal" style="width:0%" data-target="${pct}%"></div>
+      </div>
+      <span class="bar-val">£${d.v}m</span>
+    </div>`;
+});
+
+// ── ANIMATE ALL — no need to edit below this line ──────────────────
+function animateAll() {
+  document.querySelectorAll('[data-target]').forEach(el => {
+    setTimeout(() => { el.style.width = el.getAttribute('data-target'); }, 150);
+  });
+  document.querySelectorAll('.sal-bar[data-h]').forEach(el => {
+    setTimeout(() => { el.style.height = el.getAttribute('data-h'); }, 150);
+  });
+}
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if (entry.isIntersecting) animateAll(); });
+}, { threshold: 0.1 });
+observer.observe(document.querySelector('.stats-strip'));
+</script>
+
+  <!-- ════════════════════════════════
+       DATA EXPLORER — Embedded from Job_Analytics.xls
+       ════════════════════════════════ -->
+  <div style="border-top:3px double var(--ink);padding:32px 48px 16px;">
+    <div style="font-size:9px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Appendix — Interactive Data Explorer</div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px;">Browse the Full Dataset</h2>
+    <p style="font-size:12px;color:#777;margin-bottom:20px;font-weight:300;">All data embedded directly from <em>Job_Analytics.xls</em> (Lightcast Q2 2025 · Jan 2016 – Dec 2025). Use the tabs below to explore each table.</p>
+
+    <!-- Tab buttons -->
+    <div id="explorerTabs" style="display:flex;gap:0;border-bottom:2px solid var(--ink);margin-bottom:0;flex-wrap:wrap;">
+      <button onclick="showTab('tab-ts')"    class="ex-tab active"  id="btn-tab-ts">Monthly Trend</button>
+      <button onclick="showTab('tab-occs')"  class="ex-tab"         id="btn-tab-occs">Occupations</button>
+      <button onclick="showTab('tab-co')"    class="ex-tab"         id="btn-tab-co">Companies</button>
+      <button onclick="showTab('tab-sal')"   class="ex-tab"         id="btn-tab-sal">Salary</button>
+      <button onclick="showTab('tab-spec')"  class="ex-tab"         id="btn-tab-spec">Specialist Skills</button>
+      <button onclick="showTab('tab-soft')"  class="ex-tab"         id="btn-tab-soft">Software Skills</button>
+      <button onclick="showTab('tab-comm')"  class="ex-tab"         id="btn-tab-comm">Common Skills</button>
+      <button onclick="showTab('tab-city')"  class="ex-tab"         id="btn-tab-city">Cities</button>
+      <button onclick="showTab('tab-exp')"   class="ex-tab"         id="btn-tab-exp">Experience</button>
+    </div>
+
+    <!-- Tab panels -->
+    <div id="tab-ts"   class="ex-panel" style="display:block;"></div>
+    <div id="tab-occs" class="ex-panel" style="display:none;"></div>
+    <div id="tab-co"   class="ex-panel" style="display:none;"></div>
+    <div id="tab-sal"  class="ex-panel" style="display:none;"></div>
+    <div id="tab-spec" class="ex-panel" style="display:none;"></div>
+    <div id="tab-soft" class="ex-panel" style="display:none;"></div>
+    <div id="tab-comm" class="ex-panel" style="display:none;"></div>
+    <div id="tab-city" class="ex-panel" style="display:none;"></div>
+    <div id="tab-exp"  class="ex-panel" style="display:none;"></div>
+  </div>
+
+<style>
+  .ex-tab {
+    padding:8px 18px;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+    border:1px solid var(--ink);border-bottom:none;background:var(--pale);color:var(--ink);
+    cursor:pointer;margin-right:-1px;transition:background 0.15s;
+  }
+  .ex-tab:hover { background:var(--rule); }
+  .ex-tab.active { background:var(--ink);color:var(--paper); }
+  .ex-panel { padding:20px 0; }
+  .ex-table { width:100%;border-collapse:collapse;font-size:12px; }
+  .ex-table th { font-size:9px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:var(--accent);padding:0 10px 8px;text-align:left;border-bottom:1px solid var(--ink); }
+  .ex-table td { padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top; }
+  .ex-table tr:nth-child(even) td { background:rgba(0,0,0,0.02); }
+  .ex-table tr:last-child td { border-bottom:none; }
+  .ex-num { font-weight:600;font-family:'DM Serif Display',serif;font-size:14px; }
+  .ex-search { width:100%;max-width:320px;padding:7px 12px;border:1px solid var(--rule);background:var(--pale);font-family:'DM Sans',sans-serif;font-size:12px;margin-bottom:14px;color:var(--ink); }
+  .ex-search:focus { outline:1px solid var(--ink); }
+  .ex-note { font-size:10px;color:#999;margin-top:12px; }
+</style>
+
+<script>
+const XL = {"timeseries": [{"month": "Dec 2025", "postings": 185}, {"month": "Nov 2025", "postings": 240}, {"month": "Oct 2025", "postings": 266}, {"month": "Sep 2025", "postings": 206}, {"month": "Aug 2025", "postings": 147}, {"month": "Jul 2025", "postings": 191}, {"month": "Jun 2025", "postings": 219}, {"month": "May 2025", "postings": 129}, {"month": "Apr 2025", "postings": 111}, {"month": "Mar 2025", "postings": 197}, {"month": "Feb 2025", "postings": 158}, {"month": "Jan 2025", "postings": 164}, {"month": "Dec 2024", "postings": 138}, {"month": "Nov 2024", "postings": 162}, {"month": "Oct 2024", "postings": 173}, {"month": "Sep 2024", "postings": 155}, {"month": "Aug 2024", "postings": 179}, {"month": "Jul 2024", "postings": 233}, {"month": "Jun 2024", "postings": 222}, {"month": "May 2024", "postings": 271}, {"month": "Apr 2024", "postings": 229}, {"month": "Mar 2024", "postings": 257}, {"month": "Feb 2024", "postings": 257}, {"month": "Jan 2024", "postings": 227}, {"month": "Dec 2023", "postings": 182}, {"month": "Nov 2023", "postings": 241}, {"month": "Oct 2023", "postings": 247}, {"month": "Sep 2023", "postings": 328}, {"month": "Aug 2023", "postings": 285}, {"month": "Jul 2023", "postings": 244}, {"month": "Jun 2023", "postings": 352}, {"month": "May 2023", "postings": 514}, {"month": "Apr 2023", "postings": 360}, {"month": "Mar 2023", "postings": 446}, {"month": "Feb 2023", "postings": 314}, {"month": "Jan 2023", "postings": 310}, {"month": "Dec 2022", "postings": 331}, {"month": "Nov 2022", "postings": 373}, {"month": "Oct 2022", "postings": 554}, {"month": "Sep 2022", "postings": 503}, {"month": "Aug 2022", "postings": 313}, {"month": "Jul 2022", "postings": 348}, {"month": "Jun 2022", "postings": 430}, {"month": "May 2022", "postings": 262}, {"month": "Apr 2022", "postings": 355}, {"month": "Mar 2022", "postings": 484}, {"month": "Feb 2022", "postings": 386}, {"month": "Jan 2022", "postings": 226}, {"month": "Dec 2021", "postings": 255}, {"month": "Nov 2021", "postings": 379}, {"month": "Oct 2021", "postings": 265}, {"month": "Sep 2021", "postings": 370}, {"month": "Aug 2021", "postings": 379}, {"month": "Jul 2021", "postings": 277}, {"month": "Jun 2021", "postings": 367}, {"month": "May 2021", "postings": 355}, {"month": "Apr 2021", "postings": 390}, {"month": "Mar 2021", "postings": 335}, {"month": "Feb 2021", "postings": 314}, {"month": "Jan 2021", "postings": 308}, {"month": "Dec 2020", "postings": 243}, {"month": "Nov 2020", "postings": 177}, {"month": "Oct 2020", "postings": 206}, {"month": "Sep 2020", "postings": 139}, {"month": "Aug 2020", "postings": 284}, {"month": "Jul 2020", "postings": 141}, {"month": "Jun 2020", "postings": 163}, {"month": "May 2020", "postings": 106}, {"month": "Apr 2020", "postings": 80}, {"month": "Mar 2020", "postings": 206}, {"month": "Feb 2020", "postings": 306}, {"month": "Jan 2020", "postings": 323}, {"month": "Dec 2019", "postings": 212}, {"month": "Nov 2019", "postings": 349}, {"month": "Oct 2019", "postings": 311}, {"month": "Sep 2019", "postings": 265}, {"month": "Aug 2019", "postings": 286}, {"month": "Jul 2019", "postings": 301}, {"month": "Jun 2019", "postings": 302}, {"month": "May 2019", "postings": 274}, {"month": "Apr 2019", "postings": 297}, {"month": "Mar 2019", "postings": 276}, {"month": "Feb 2019", "postings": 185}, {"month": "Jan 2019", "postings": 247}, {"month": "Dec 2018", "postings": 255}, {"month": "Nov 2018", "postings": 223}, {"month": "Oct 2018", "postings": 281}, {"month": "Sep 2018", "postings": 242}, {"month": "Aug 2018", "postings": 316}, {"month": "Jul 2018", "postings": 279}, {"month": "Jun 2018", "postings": 298}, {"month": "May 2018", "postings": 358}, {"month": "Apr 2018", "postings": 265}, {"month": "Mar 2018", "postings": 268}, {"month": "Feb 2018", "postings": 230}, {"month": "Jan 2018", "postings": 278}, {"month": "Dec 2017", "postings": 163}, {"month": "Nov 2017", "postings": 164}, {"month": "Oct 2017", "postings": 274}, {"month": "Sep 2017", "postings": 220}, {"month": "Aug 2017", "postings": 213}, {"month": "Jul 2017", "postings": 285}, {"month": "Jun 2017", "postings": 295}, {"month": "May 2017", "postings": 332}, {"month": "Apr 2017", "postings": 278}, {"month": "Mar 2017", "postings": 270}, {"month": "Feb 2017", "postings": 203}, {"month": "Jan 2017", "postings": 218}, {"month": "Dec 2016", "postings": 163}, {"month": "Nov 2016", "postings": 335}, {"month": "Oct 2016", "postings": 210}, {"month": "Sep 2016", "postings": 280}, {"month": "Aug 2016", "postings": 181}, {"month": "Jul 2016", "postings": 258}, {"month": "Jun 2016", "postings": 282}, {"month": "May 2016", "postings": 152}, {"month": "Apr 2016", "postings": 260}, {"month": "Mar 2016", "postings": 273}, {"month": "Feb 2016", "postings": 258}, {"month": "Jan 2016", "postings": 259}], "occupations": [{"name": "Programmers and Software Development Professionals", "total": 24515, "unique": 5479}, {"name": "Sales Related Occupations n.e.c.", "total": 6663, "unique": 2084}, {"name": "IT Business Analysts, Architects and Systems Designers", "total": 4305, "unique": 1053}, {"name": "Customer Service Occupations n.e.c.", "total": 2128, "unique": 931}, {"name": "Book-keepers, Payroll Managers and Wages Clerks", "total": 3700, "unique": 710}, {"name": "Advertising and Marketing Associate Professionals", "total": 1552, "unique": 660}, {"name": "IT Network Professionals", "total": 2446, "unique": 645}, {"name": "Chartered and Certified Accountants", "total": 8314, "unique": 627}, {"name": "IT Operations Technicians", "total": 1809, "unique": 593}, {"name": "Project Support Officers", "total": 2093, "unique": 577}, {"name": "Cyber Security Professionals", "total": 2477, "unique": 560}, {"name": "IT User Support Technicians", "total": 1621, "unique": 558}, {"name": "IT Quality and Testing Professionals", "total": 2421, "unique": 537}, {"name": "Management Consultants and Business Analysts", "total": 1857, "unique": 530}, {"name": "Human Resources and Industrial Relations Officers", "total": 2068, "unique": 526}, {"name": "Database Administrators and Web Content Technicians", "total": 2106, "unique": 484}, {"name": "Managers and Directors in Retail and Wholesale", "total": 1769, "unique": 471}, {"name": "Web Design Professionals", "total": 1483, "unique": 461}, {"name": "Sales Accounts and Business Development Managers", "total": 1337, "unique": 432}, {"name": "IT Managers", "total": 1279, "unique": 408}, {"name": "Buyers and Procurement Officers", "total": 1519, "unique": 352}, {"name": "Data Analysts", "total": 1475, "unique": 324}, {"name": "Finance and Investment Analysts and Advisers", "total": 2212, "unique": 321}, {"name": "Production and Process Engineers", "total": 1352, "unique": 316}, {"name": "Photographers, Audio-visual and Broadcasting Equipment Operators", "total": 499, "unique": 275}, {"name": "Call and Contact Centre Occupations", "total": 929, "unique": 268}, {"name": "Business, Research and Administrative Professionals n.e.c.", "total": 781, "unique": 257}, {"name": "Transport and Distribution Clerks and Assistants", "total": 873, "unique": 245}, {"name": "Mechanical Engineers", "total": 1221, "unique": 237}, {"name": "Managers and Proprietors in Other Services n.e.c.", "total": 1120, "unique": 232}, {"name": "Personal Assistants and Other Secretaries", "total": 468, "unique": 226}, {"name": "Human Resource Managers and Directors", "total": 619, "unique": 214}, {"name": "Engineering Technicians", "total": 890, "unique": 206}, {"name": "Human Resources Administrative Occupations", "total": 661, "unique": 204}, {"name": "Financial Managers and Directors", "total": 1220, "unique": 185}, {"name": "Quality Control and Planning Engineers", "total": 878, "unique": 173}, {"name": "Quantity Surveyors", "total": 1148, "unique": 164}, {"name": "Other Administrative Occupations n.e.c.", "total": 504, "unique": 162}, {"name": "Marketing, Sales and Advertising Directors", "total": 422, "unique": 161}, {"name": "Plant and Machine Operatives n.e.c.", "total": 599, "unique": 160}, {"name": "Health and Safety Managers and Officers", "total": 820, "unique": 156}, {"name": "Electrical Engineers", "total": 1574, "unique": 148}, {"name": "Higher Education Teaching Professionals", "total": 368, "unique": 146}, {"name": "Marketing and Commercial Managers", "total": 540, "unique": 144}, {"name": "Public Relations and Communications Directors", "total": 384, "unique": 143}, {"name": "Customer Service Managers", "total": 352, "unique": 143}, {"name": "Financial Accounts Managers", "total": 919, "unique": 137}, {"name": "Other Registered Nursing Professionals", "total": 341, "unique": 134}, {"name": "Production Managers and Directors in Manufacturing", "total": 560, "unique": 133}, {"name": "Sales and Retail Assistants", "total": 386, "unique": 121}], "companies": [{"name": "Cpl Jobs S.r.o.", "total": 58086, "unique": 5079, "duration": "34 days"}, {"name": "Concentrix", "total": 4506, "unique": 2250, "duration": "24 days"}, {"name": "Allstate", "total": 12695, "unique": 1932, "duration": "21 days"}, {"name": "Version1", "total": 5272, "unique": 1482, "duration": "28 days"}, {"name": "Kainos Software Limited", "total": 2500, "unique": 1239, "duration": "21 days"}, {"name": "Corvus People", "total": 3056, "unique": 676, "duration": "30 days"}, {"name": "Proofpoint", "total": 1629, "unique": 622, "duration": "35 days"}, {"name": "Rapid7", "total": 1979, "unique": 619, "duration": "28 days"}, {"name": "Wisdom IT Services", "total": 626, "unique": 608, "duration": "N/A"}, {"name": "Exact It Resources", "total": 675, "unique": 520, "duration": "29 days"}, {"name": "CGI Deutschland", "total": 1579, "unique": 463, "duration": "25 days"}, {"name": "Employmint", "total": 565, "unique": 383, "duration": "29 days"}, {"name": "Cme Technology And Support Services Limited", "total": 3097, "unique": 374, "duration": "27 days"}, {"name": "Stryker", "total": 809, "unique": 373, "duration": "25 days"}, {"name": "Fujitsu", "total": 802, "unique": 353, "duration": "26 days"}, {"name": "Fmi", "total": 1238, "unique": 296, "duration": "22 days"}, {"name": "Times Higher Education", "total": 398, "unique": 287, "duration": "N/A"}, {"name": "Marie Curie Uk", "total": 588, "unique": 281, "duration": "23 days"}, {"name": "Licklist", "total": 483, "unique": 261, "duration": "31 days"}, {"name": "OneSource Virtual", "total": 436, "unique": 256, "duration": "32 days"}, {"name": "Briggs Equipment", "total": 486, "unique": 250, "duration": "30 days"}, {"name": "Open Text Corporation", "total": 398, "unique": 248, "duration": "20 days"}, {"name": "Competition And Markets Authority", "total": 540, "unique": 246, "duration": "23 days"}, {"name": "The Training Room", "total": 451, "unique": 231, "duration": "40 days"}, {"name": "Bazaarvoice", "total": 362, "unique": 229, "duration": "34 days"}, {"name": "Thermo Fisher Scientific", "total": 248, "unique": 207, "duration": "21 days"}, {"name": "Anomali", "total": 362, "unique": 206, "duration": "22 days"}, {"name": "First Derivatives", "total": 751, "unique": 200, "duration": "33 days"}, {"name": "Novosco Limited", "total": 335, "unique": 182, "duration": "29 days"}, {"name": "Microsoft", "total": 286, "unique": 178, "duration": "36 days"}, {"name": "Applied Systems", "total": 325, "unique": 175, "duration": "31 days"}, {"name": "Metacompliance Ltd", "total": 236, "unique": 161, "duration": "36 days"}, {"name": "SAP", "total": 620, "unique": 161, "duration": "24 days"}, {"name": "Evri", "total": 277, "unique": 156, "duration": "16 days"}, {"name": "Andor Technology", "total": 214, "unique": 142, "duration": "28 days"}, {"name": "Fortive", "total": 246, "unique": 141, "duration": "24 days"}, {"name": "Signifyd", "total": 179, "unique": 135, "duration": "38 days"}, {"name": "Develop", "total": 217, "unique": 134, "duration": "21 days"}, {"name": "Housing Rights", "total": 607, "unique": 133, "duration": "25 days"}, {"name": "JobG8", "total": 183, "unique": 129, "duration": "N/A"}, {"name": "Bannantyne School", "total": 531, "unique": 124, "duration": "22 days"}, {"name": "Synechron", "total": 221, "unique": 122, "duration": "22 days"}, {"name": "Tobermore", "total": 165, "unique": 120, "duration": "23 days"}, {"name": "Upper Springfield Development Trust Ltd", "total": 163, "unique": 117, "duration": "24 days"}, {"name": "Kainos Worksmart", "total": 134, "unique": 114, "duration": "27 days"}, {"name": "Atos", "total": 177, "unique": 113, "duration": "27 days"}, {"name": "Liberty Information Technology", "total": 162, "unique": 112, "duration": "22 days"}, {"name": "Blk Box", "total": 147, "unique": 110, "duration": "32 days"}, {"name": "Eos It Solutions", "total": 233, "unique": 108, "duration": "32 days"}, {"name": "The Deluxe Group", "total": 136, "unique": 106, "duration": "25 days"}], "salary": [{"band": "\u00a310,000-\u00a314,999", "obs": 90}, {"band": "\u00a315,000-\u00a317,999", "obs": 424}, {"band": "\u00a318,000-\u00a320,999", "obs": 951}, {"band": "\u00a321,000-\u00a323,999", "obs": 579}, {"band": "\u00a324,000-\u00a326,999", "obs": 1063}, {"band": "\u00a327,000-\u00a329,999", "obs": 423}, {"band": "\u00a330,000-\u00a332,999", "obs": 788}, {"band": "\u00a333,000-\u00a335,999", "obs": 591}, {"band": "\u00a336,000-\u00a338,999", "obs": 285}, {"band": "\u00a339,000-\u00a341,999", "obs": 416}, {"band": "\u00a342,000-\u00a344,999", "obs": 246}, {"band": "\u00a345,000-\u00a3250,000", "obs": 1258}], "specSkills": [{"name": "Agile Methodology", "postings": 4142, "postPct": 13.0, "profiles": 1673, "profPct": 10.9}, {"name": "Project Management", "postings": 3268, "postPct": 10.2, "profiles": 2506, "profPct": 16.3}, {"name": "Software Development", "postings": 2579, "postPct": 8.1, "profiles": 1941, "profPct": 12.6}, {"name": "Java (Programming Language)", "postings": 2461, "postPct": 7.7, "profiles": 1644, "profPct": 10.7}, {"name": "SQL (Programming Language)", "postings": 2305, "postPct": 7.2, "profiles": 2030, "profPct": 13.2}, {"name": "Amazon Web Services", "postings": 2271, "postPct": 7.1, "profiles": 749, "profPct": 4.9}, {"name": "Software Engineering", "postings": 2260, "postPct": 7.1, "profiles": 2107, "profPct": 13.7}, {"name": "Automation", "postings": 2232, "postPct": 7.0, "profiles": 782, "profPct": 5.1}, {"name": "Python (Programming Language)", "postings": 2181, "postPct": 6.8, "profiles": 1030, "profPct": 6.7}, {"name": "Computer Science", "postings": 2154, "postPct": 6.8, "profiles": 201, "profPct": 1.3}, {"name": "Finance", "postings": 2142, "postPct": 6.7, "profiles": 696, "profPct": 4.5}, {"name": "JavaScript (Programming Language)", "postings": 2101, "postPct": 6.6, "profiles": 1401, "profPct": 9.1}, {"name": "Marketing", "postings": 2087, "postPct": 6.5, "profiles": 1309, "profPct": 8.5}, {"name": "Continuous Improvement Process", "postings": 1863, "postPct": 5.8, "profiles": 336, "profPct": 2.2}, {"name": "Microsoft Azure", "postings": 1790, "postPct": 5.6, "profiles": 562, "profPct": 3.7}, {"name": "Linux", "postings": 1673, "postPct": 5.2, "profiles": 882, "profPct": 5.7}, {"name": "Key Performance Indicators (KPIs)", "postings": 1673, "postPct": 5.2, "profiles": 432, "profPct": 2.8}, {"name": "Accounting", "postings": 1666, "postPct": 5.2, "profiles": 465, "profPct": 3.0}, {"name": "Scrum (Software Development)", "postings": 1575, "postPct": 4.9, "profiles": 892, "profPct": 5.8}, {"name": "C# (Programming Language)", "postings": 1518, "postPct": 4.8, "profiles": 1097, "profPct": 7.1}, {"name": "Auditing", "postings": 1493, "postPct": 4.7, "profiles": 565, "profPct": 3.7}, {"name": "Customer Relationship Management", "postings": 1440, "postPct": 4.5, "profiles": 942, "profPct": 6.1}, {"name": "Scalability", "postings": 1426, "postPct": 4.5, "profiles": 218, "profPct": 1.4}, {"name": "DevOps", "postings": 1322, "postPct": 4.1, "profiles": 425, "profPct": 2.8}, {"name": "Data Analysis", "postings": 1262, "postPct": 4.0, "profiles": 1115, "profPct": 7.3}, {"name": "Application Programming Interface (API)", "postings": 1229, "postPct": 3.9, "profiles": 467, "profPct": 3.0}, {"name": "Scripting", "postings": 1178, "postPct": 3.7, "profiles": 239, "profPct": 1.6}, {"name": "Software As A Service (SaaS)", "postings": 1128, "postPct": 3.5, "profiles": 440, "profPct": 2.9}, {"name": "Technical Support", "postings": 1112, "postPct": 3.5, "profiles": 1010, "profPct": 6.6}, {"name": "Business Requirements", "postings": 1095, "postPct": 3.4, "profiles": 218, "profPct": 1.4}, {"name": "New Product Development", "postings": 1082, "postPct": 3.4, "profiles": 478, "profPct": 3.1}, {"name": "Jenkins", "postings": 1066, "postPct": 3.3, "profiles": 352, "profPct": 2.3}, {"name": "CI/CD", "postings": 1043, "postPct": 3.3, "profiles": 198, "profPct": 1.3}, {"name": "Process Improvement", "postings": 1037, "postPct": 3.3, "profiles": 470, "profPct": 3.1}, {"name": "Cascading Style Sheets (CSS)", "postings": 1012, "postPct": 3.2, "profiles": 1005, "profPct": 6.5}, {"name": "Test Automation", "postings": 989, "postPct": 3.1, "profiles": 444, "profPct": 2.9}, {"name": "Product Management", "postings": 940, "postPct": 2.9, "profiles": 559, "profPct": 3.6}, {"name": "Business Development", "postings": 939, "postPct": 2.9, "profiles": 1135, "profPct": 7.4}, {"name": "Invoicing", "postings": 927, "postPct": 2.9, "profiles": 261, "profPct": 1.7}, {"name": "JIRA", "postings": 918, "postPct": 2.9, "profiles": 516, "profPct": 3.4}, {"name": "React.js (Javascript Library)", "postings": 907, "postPct": 2.8, "profiles": 407, "profPct": 2.7}, {"name": "Continuous Integration", "postings": 903, "postPct": 2.8, "profiles": 216, "profPct": 1.4}, {"name": "Selling Techniques", "postings": 891, "postPct": 2.8, "profiles": 247, "profPct": 1.6}, {"name": "Workflow Management", "postings": 890, "postPct": 2.8, "profiles": 350, "profPct": 2.3}, {"name": "Git (Version Control System)", "postings": 864, "postPct": 2.7, "profiles": 571, "profPct": 3.7}, {"name": "Governance", "postings": 847, "postPct": 2.7, "profiles": 327, "profPct": 2.1}, {"name": "HyperText Markup Language (HTML)", "postings": 804, "postPct": 2.5, "profiles": 1240, "profPct": 8.1}, {"name": "Customer Support", "postings": 793, "postPct": 2.5, "profiles": 434, "profPct": 2.8}, {"name": "Operating Systems", "postings": 788, "postPct": 2.5, "profiles": 316, "profPct": 2.1}, {"name": "Software Development Life Cycle", "postings": 785, "postPct": 2.5, "profiles": 243, "profPct": 1.6}], "softSkills": [{"name": "Java (Programming Language)", "postings": 2461, "postPct": 7.7, "profiles": 1646, "profPct": 10.7}, {"name": "SQL (Programming Language)", "postings": 2305, "postPct": 7.2, "profiles": 2032, "profPct": 13.2}, {"name": "Amazon Web Services", "postings": 2282, "postPct": 7.2, "profiles": 749, "profPct": 4.9}, {"name": "Microsoft Excel", "postings": 2267, "postPct": 7.1, "profiles": 1454, "profPct": 9.5}, {"name": "Python (Programming Language)", "postings": 2181, "postPct": 6.8, "profiles": 1031, "profPct": 6.7}, {"name": "Microsoft Office", "postings": 2113, "postPct": 6.6, "profiles": 1945, "profPct": 12.7}, {"name": "JavaScript (Programming Language)", "postings": 2101, "postPct": 6.6, "profiles": 1403, "profPct": 9.1}, {"name": "Microsoft Azure", "postings": 1819, "postPct": 5.7, "profiles": 563, "profPct": 3.7}, {"name": "Linux", "postings": 1673, "postPct": 5.2, "profiles": 882, "profPct": 5.7}, {"name": "C# (Programming Language)", "postings": 1518, "postPct": 4.8, "profiles": 1099, "profPct": 7.2}, {"name": "Application Programming Interface (API)", "postings": 1246, "postPct": 3.9, "profiles": 468, "profPct": 3.0}, {"name": "Jenkins", "postings": 1107, "postPct": 3.5, "profiles": 352, "profPct": 2.3}, {"name": "Microsoft Outlook", "postings": 1099, "postPct": 3.4, "profiles": 304, "profPct": 2.0}, {"name": "Cascading Style Sheets (CSS)", "postings": 1084, "postPct": 3.4, "profiles": 1007, "profPct": 6.6}, {"name": "React.js (Javascript Library)", "postings": 929, "postPct": 2.9, "profiles": 408, "profPct": 2.7}, {"name": "JIRA", "postings": 918, "postPct": 2.9, "profiles": 516, "profPct": 3.4}, {"name": "Git (Version Control System)", "postings": 901, "postPct": 2.8, "profiles": 571, "profPct": 3.7}, {"name": "HyperText Markup Language (HTML)", "postings": 887, "postPct": 2.8, "profiles": 1240, "profPct": 8.1}, {"name": "Angular (Web Framework)", "postings": 859, "postPct": 2.7, "profiles": 312, "profPct": 2.0}, {"name": "Microsoft PowerPoint", "postings": 826, "postPct": 2.6, "profiles": 782, "profPct": 5.1}, {"name": "Operating Systems", "postings": 809, "postPct": 2.5, "profiles": 316, "profPct": 2.1}, {"name": "Docker (Software)", "postings": 801, "postPct": 2.5, "profiles": 342, "profPct": 2.2}, {"name": "Unix", "postings": 793, "postPct": 2.5, "profiles": 641, "profPct": 4.2}, {"name": "Kubernetes", "postings": 788, "postPct": 2.5, "profiles": 242, "profPct": 1.6}, {"name": "RESTful API", "postings": 707, "postPct": 2.2, "profiles": 292, "profPct": 1.9}, {"name": "C++ (Programming Language)", "postings": 636, "postPct": 2.0, "profiles": 607, "profPct": 4.0}, {"name": "Workday (Software)", "postings": 629, "postPct": 2.0, "profiles": 235, "profPct": 1.5}, {"name": ".NET Framework", "postings": 579, "postPct": 1.8, "profiles": 675, "profPct": 4.4}, {"name": "SAP Applications", "postings": 563, "postPct": 1.8, "profiles": 212, "profPct": 1.4}, {"name": "Salesforce", "postings": 546, "postPct": 1.7, "profiles": 263, "profPct": 1.7}, {"name": "Node.js (Javascript Library)", "postings": 532, "postPct": 1.7, "profiles": 279, "profPct": 1.8}, {"name": "Github", "postings": 529, "postPct": 1.7, "profiles": 345, "profPct": 2.2}, {"name": "Terraform", "postings": 519, "postPct": 1.6, "profiles": 187, "profPct": 1.2}, {"name": "Spring Framework", "postings": 501, "postPct": 1.6, "profiles": 246, "profPct": 1.6}, {"name": "HTML5", "postings": 500, "postPct": 1.6, "profiles": 478, "profPct": 3.1}, {"name": "Firewall", "postings": 500, "postPct": 1.6, "profiles": 174, "profPct": 1.1}, {"name": "ITIL 4", "postings": 471, "postPct": 1.5, "profiles": 528, "profPct": 3.4}, {"name": "Microsoft SQL Servers", "postings": 469, "postPct": 1.5, "profiles": 833, "profPct": 5.4}, {"name": "C (Programming Language)", "postings": 467, "postPct": 1.5, "profiles": 366, "profPct": 2.4}, {"name": "Rapid7", "postings": 465, "postPct": 1.5, "profiles": 63, "profPct": 0.4}, {"name": "Microsoft Word", "postings": 465, "postPct": 1.5, "profiles": 844, "profPct": 5.5}, {"name": "Active Directory", "postings": 458, "postPct": 1.4, "profiles": 457, "profPct": 3.0}, {"name": "Microsoft 365", "postings": 442, "postPct": 1.4, "profiles": 307, "profPct": 2.0}, {"name": "Perl (Programming Language)", "postings": 424, "postPct": 1.3, "profiles": 156, "profPct": 1.0}, {"name": "Microsoft SharePoint", "postings": 421, "postPct": 1.3, "profiles": 373, "profPct": 2.4}, {"name": "Bash (Scripting Language)", "postings": 407, "postPct": 1.3, "profiles": 226, "profPct": 1.5}, {"name": "JSON", "postings": 406, "postPct": 1.3, "profiles": 209, "profPct": 1.4}, {"name": "PostgreSQL", "postings": 404, "postPct": 1.3, "profiles": 186, "profPct": 1.2}, {"name": "TypeScript", "postings": 400, "postPct": 1.3, "profiles": 222, "profPct": 1.4}, {"name": "Selenium (Software)", "postings": 393, "postPct": 1.2, "profiles": 219, "profPct": 1.4}], "cities": [{"name": "Belfast", "total": 79593, "unique": 21711}, {"name": "Londonderry, Derry City and Strabane", "total": 3518, "unique": 1103}, {"name": "Newry, Newry, Mourne and Down", "total": 7972, "unique": 1019}, {"name": "Armagh, Armagh City, Banbridge and Craigavon", "total": 6409, "unique": 1016}, {"name": "Antrim, Antrim and Newtownabbey", "total": 1785, "unique": 939}, {"name": "Lisburn, Lisburn and Castlereagh", "total": 3762, "unique": 738}, {"name": "Dungannon, Mid Ulster", "total": 2429, "unique": 461}, {"name": "Craigavon, Armagh City, Banbridge and Craigavon", "total": 2913, "unique": 383}, {"name": "Crumlin, Antrim and Newtownabbey", "total": 5536, "unique": 333}, {"name": "Newcastle Upon Tyne, Newry, Mourne and Down", "total": 490, "unique": 288}, {"name": "Bangor, Ards and North Down", "total": 925, "unique": 271}, {"name": "Coleraine, Causeway Coast and Glens", "total": 780, "unique": 229}, {"name": "Newtownabbey, Antrim and Newtownabbey", "total": 739, "unique": 204}, {"name": "Cookstown, Mid Ulster", "total": 1075, "unique": 202}, {"name": "Magherafelt, Mid Ulster", "total": 355, "unique": 201}, {"name": "Ballynahinch, Newry, Mourne and Down", "total": 1037, "unique": 195}, {"name": "Omagh, Fermanagh and Omagh", "total": 1208, "unique": 126}, {"name": "Enniskillen, Fermanagh and Omagh", "total": 394, "unique": 122}, {"name": "Ballymena, Mid and East Antrim", "total": 944, "unique": 117}, {"name": "Strabane, Derry City and Strabane", "total": 272, "unique": 109}, {"name": "Banbridge, Armagh City, Banbridge and Craigavon", "total": 285, "unique": 103}, {"name": "Newtownards, Ards and North Down", "total": 498, "unique": 67}, {"name": "Crumlin, Belfast", "total": 93, "unique": 62}, {"name": "Downpatrick, Newry, Mourne and Down", "total": 258, "unique": 58}, {"name": "Portstewart, Causeway Coast and Glens", "total": 110, "unique": 52}, {"name": "Holywood, Ards and North Down", "total": 117, "unique": 50}, {"name": "Carrickfergus, Mid and East Antrim", "total": 87, "unique": 40}, {"name": "Dundonald, Lisburn and Castlereagh", "total": 90, "unique": 40}, {"name": "Larne, Mid and East Antrim", "total": 65, "unique": 40}, {"name": "Portrush, Causeway Coast and Glens", "total": 50, "unique": 33}, {"name": "Shaftesbury, Belfast", "total": 42, "unique": 31}, {"name": "Ballyclare, Antrim and Newtownabbey", "total": 33, "unique": 26}, {"name": "Comber, Ards and North Down", "total": 187, "unique": 25}, {"name": "Strand, Causeway Coast and Glens", "total": 27, "unique": 22}, {"name": "Royal Hillsborough, Lisburn and Castlereagh", "total": 54, "unique": 21}, {"name": "Ballymoney, Causeway Coast and Glens", "total": 46, "unique": 20}, {"name": "Limavady, Causeway Coast and Glens", "total": 36, "unique": 19}, {"name": "Dromore, Armagh City, Banbridge and Craigavon", "total": 239, "unique": 18}, {"name": "Mallusk, Antrim and Newtownabbey", "total": 125, "unique": 18}, {"name": "Belmont, Belfast", "total": 27, "unique": 17}, {"name": "Carryduff, Lisburn and Castlereagh", "total": 19, "unique": 16}, {"name": "Castlewellan, Newry, Mourne and Down", "total": 51, "unique": 16}, {"name": "Coalisland, Mid Ulster", "total": 32, "unique": 14}, {"name": "Carnmoney, Antrim and Newtownabbey", "total": 10, "unique": 10}, {"name": "Churchill, Ards and North Down", "total": 18, "unique": 10}, {"name": "Moneymore, Mid Ulster", "total": 11, "unique": 10}, {"name": "Portadown, Armagh City, Banbridge and Craigavon", "total": 12, "unique": 10}, {"name": "Glengormley, Antrim and Newtownabbey", "total": 14, "unique": 9}, {"name": "Toome, Antrim and Newtownabbey", "total": 9, "unique": 9}, {"name": "Benburb, Mid Ulster", "total": 11, "unique": 8}], "experience": [{"level": "No Experience Listed", "unique": 18320, "pct": 57.4}, {"level": "0 - 1 Years", "unique": 3001, "pct": 9.4}, {"level": "2 - 3 Years", "unique": 5794, "pct": 18.2}, {"level": "4 - 6 Years", "unique": 3675, "pct": 11.5}, {"level": "7 - 9 Years", "unique": 460, "pct": 1.4}, {"level": "10+ Years", "unique": 646, "pct": 2.0}], "commonSkills": [{"name": "Communication", "postings": 11766, "postPct": 36.9}, {"name": "Management", "postings": 7044, "postPct": 22.1}, {"name": "Customer Service", "postings": 6273, "postPct": 19.7}, {"name": "Sales", "postings": 5737, "postPct": 18.0}, {"name": "Problem Solving", "postings": 4600, "postPct": 14.4}, {"name": "Detail Oriented", "postings": 3793, "postPct": 11.9}, {"name": "Planning", "postings": 3517, "postPct": 11.0}, {"name": "Operations", "postings": 3191, "postPct": 10.0}, {"name": "Leadership", "postings": 3181, "postPct": 10.0}, {"name": "English Language", "postings": 3165, "postPct": 9.9}, {"name": "Innovation", "postings": 3062, "postPct": 9.6}, {"name": "Troubleshooting (Problem Solving)", "postings": 2867, "postPct": 9.0}, {"name": "Research", "postings": 2734, "postPct": 8.6}, {"name": "Writing", "postings": 2680, "postPct": 8.4}, {"name": "Interpersonal Communications", "postings": 2409, "postPct": 7.6}, {"name": "Microsoft Excel", "postings": 2267, "postPct": 7.1}, {"name": "Presentations", "postings": 2194, "postPct": 6.9}, {"name": "Microsoft Office", "postings": 2113, "postPct": 6.6}, {"name": "Mentorship", "postings": 1969, "postPct": 6.2}, {"name": "Self-Motivation", "postings": 1817, "postPct": 5.7}, {"name": "Verbal Communication Skills", "postings": 1770, "postPct": 5.5}, {"name": "Influencing Skills", "postings": 1753, "postPct": 5.5}, {"name": "Organizational Skills", "postings": 1752, "postPct": 5.5}, {"name": "Multitasking", "postings": 1689, "postPct": 5.3}, {"name": "Time Management", "postings": 1654, "postPct": 5.2}, {"name": "Teamwork", "postings": 1627, "postPct": 5.1}, {"name": "Enthusiasm", "postings": 1583, "postPct": 5.0}, {"name": "Coaching", "postings": 1550, "postPct": 4.9}, {"name": "Mathematics", "postings": 1360, "postPct": 4.3}, {"name": "Self-Starter", "postings": 1261, "postPct": 4.0}, {"name": "Consulting", "postings": 1234, "postPct": 3.9}, {"name": "Prioritization", "postings": 1201, "postPct": 3.8}, {"name": "Forecasting", "postings": 1181, "postPct": 3.7}, {"name": "Negotiation", "postings": 1170, "postPct": 3.7}, {"name": "Analytical Skills", "postings": 1121, "postPct": 3.5}, {"name": "Willingness To Learn", "postings": 1110, "postPct": 3.5}, {"name": "Decision Making", "postings": 1101, "postPct": 3.5}, {"name": "Microsoft Outlook", "postings": 1099, "postPct": 3.4}, {"name": "Coordinating", "postings": 966, "postPct": 3.0}, {"name": "Computer Literacy", "postings": 962, "postPct": 3.0}, {"name": "Safety Assurance", "postings": 959, "postPct": 3.0}, {"name": "Professionalism", "postings": 945, "postPct": 3.0}, {"name": "Accountability", "postings": 927, "postPct": 2.9}, {"name": "Microsoft PowerPoint", "postings": 826, "postPct": 2.6}, {"name": "Quality Assurance", "postings": 798, "postPct": 2.5}, {"name": "Confidentiality", "postings": 769, "postPct": 2.4}, {"name": "Ability To Meet Deadlines", "postings": 767, "postPct": 2.4}, {"name": "Resilience", "postings": 767, "postPct": 2.4}, {"name": "Team Leadership", "postings": 749, "postPct": 2.3}, {"name": "Administrative Functions", "postings": 704, "postPct": 2.2}]};
+
+function showTab(id) {
+  document.querySelectorAll('.ex-panel').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.ex-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).style.display='block';
+  document.getElementById('btn-'+id).classList.add('active');
+}
+
+function makeTable(id, html) {
+  document.getElementById(id).innerHTML = html;
+}
+
+function searchFilter(inputId, tableId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>{
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// Monthly Trend
+(function(){
+  let h = `<input class="ex-search" id="s-ts" oninput="searchFilter('s-ts','t-ts')" placeholder="Search month…">
+  <table class="ex-table" id="t-ts"><thead><tr><th>Month</th><th>Unique Postings</th></tr></thead><tbody>`;
+  XL.timeseries.forEach(r=>{
+    h+=`<tr><td>${r.month}</td><td class="ex-num">${r.postings.toLocaleString()}</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Job Postings Timeseries sheet · Lightcast Q2 2025</p>';
+  makeTable('tab-ts',h);
+})();
+
+// Occupations
+(function(){
+  let h=`<input class="ex-search" id="s-occs" oninput="searchFilter('s-occs','t-occs')" placeholder="Search occupation…">
+  <table class="ex-table" id="t-occs"><thead><tr><th>Occupation (SOC)</th><th>Total Postings</th><th>Unique Postings</th></tr></thead><tbody>`;
+  XL.occupations.forEach(r=>{
+    h+=`<tr><td>${r.name}</td><td class="ex-num">${r.total.toLocaleString()}</td><td>${r.unique.toLocaleString()}</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Job Postings Top Occs sheet · Jan 2016 – Dec 2025</p>';
+  makeTable('tab-occs',h);
+})();
+
+// Companies
+(function(){
+  let h=`<input class="ex-search" id="s-co" oninput="searchFilter('s-co','t-co')" placeholder="Search company…">
+  <table class="ex-table" id="t-co"><thead><tr><th>Company</th><th>Total Postings</th><th>Unique Postings</th><th>Median Duration</th></tr></thead><tbody>`;
+  XL.companies.forEach(r=>{
+    h+=`<tr><td>${r.name}</td><td class="ex-num">${r.total.toLocaleString()}</td><td>${r.unique.toLocaleString()}</td><td>${r.duration}</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Job Postings Top Companies sheet · Jan 2016 – Dec 2025</p>';
+  makeTable('tab-co',h);
+})();
+
+// Salary
+(function(){
+  let h=`<table class="ex-table" id="t-sal"><thead><tr><th>Salary Band</th><th>Observations</th></tr></thead><tbody>`;
+  XL.salary.forEach(r=>{
+    h+=`<tr><td>${r.band}</td><td class="ex-num">${r.obs.toLocaleString()}</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Advertised Salary sheet · 7,114 observations (22% of postings) · Median: £30,016</p>';
+  makeTable('tab-sal',h);
+})();
+
+// Specialist Skills
+(function(){
+  let h=`<input class="ex-search" id="s-spec" oninput="searchFilter('s-spec','t-spec')" placeholder="Search skill…">
+  <table class="ex-table" id="t-spec"><thead><tr><th>Skill</th><th>Postings</th><th>% of Postings</th><th>Profiles</th><th>% of Profiles</th></tr></thead><tbody>`;
+  XL.specSkills.forEach(r=>{
+    h+=`<tr><td>${r.name}</td><td class="ex-num">${r.postings.toLocaleString()}</td><td>${r.postPct}%</td><td>${r.profiles.toLocaleString()}</td><td>${r.profPct}%</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Top Specialized Skills sheet · Jan 2016 – Dec 2025</p>';
+  makeTable('tab-spec',h);
+})();
+
+// Software Skills
+(function(){
+  let h=`<input class="ex-search" id="s-soft" oninput="searchFilter('s-soft','t-soft')" placeholder="Search skill…">
+  <table class="ex-table" id="t-soft"><thead><tr><th>Skill</th><th>Postings</th><th>% of Postings</th><th>Profiles</th><th>% of Profiles</th></tr></thead><tbody>`;
+  XL.softSkills.forEach(r=>{
+    h+=`<tr><td>${r.name}</td><td class="ex-num">${r.postings.toLocaleString()}</td><td>${r.postPct}%</td><td>${r.profiles.toLocaleString()}</td><td>${r.profPct}%</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Top Software Skills sheet · Jan 2016 – Dec 2025</p>';
+  makeTable('tab-soft',h);
+})();
+
+// Common Skills
+(function(){
+  let h=`<input class="ex-search" id="s-comm" oninput="searchFilter('s-comm','t-comm')" placeholder="Search skill…">
+  <table class="ex-table" id="t-comm"><thead><tr><th>Skill</th><th>Postings</th><th>% of Postings</th></tr></thead><tbody>`;
+  XL.commonSkills.forEach(r=>{
+    h+=`<tr><td>${r.name}</td><td class="ex-num">${r.postings.toLocaleString()}</td><td>${r.postPct}%</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Top Common Skills sheet · Jan 2016 – Dec 2025</p>';
+  makeTable('tab-comm',h);
+})();
+
+// Cities
+(function(){
+  let h=`<input class="ex-search" id="s-city" oninput="searchFilter('s-city','t-city')" placeholder="Search city…">
+  <table class="ex-table" id="t-city"><thead><tr><th>City / Area</th><th>Total Postings</th><th>Unique Postings</th></tr></thead><tbody>`;
+  XL.cities.forEach(r=>{
+    h+=`<tr><td>${r.name}</td><td class="ex-num">${r.total.toLocaleString()}</td><td>${r.unique.toLocaleString()}</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Job Postings Top Cities sheet · Jan 2016 – Dec 2025</p>';
+  makeTable('tab-city',h);
+})();
+
+// Experience
+(function(){
+  let h=`<table class="ex-table" id="t-exp"><thead><tr><th>Minimum Experience Required</th><th>Unique Postings</th><th>% of Total</th></tr></thead><tbody>`;
+  XL.experience.forEach(r=>{
+    h+=`<tr><td>${r.level}</td><td class="ex-num">${r.unique.toLocaleString()}</td><td>${r.pct}%</td></tr>`;
+  });
+  h+='</tbody></table><p class="ex-note">Source: Edu and Experience Breakdown sheet · Jan 2016 – Dec 2025</p>';
+  makeTable('tab-exp',h);
+})();
+</script>
+
+</body>
+</html>
